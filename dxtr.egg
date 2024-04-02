@@ -1,0 +1,8 @@
+((author "Jakub Nowak")
+ (version "0.1.0")
+ (synopsis "A terminal dice calculator utility and library")
+ (license "AGPLv3")
+ (components (extension libdxtr)
+ 	     (program dxtr
+	     	      (component-dependencies libdxtr)))
+ (dependencies (comparse "3") srfi-14))
