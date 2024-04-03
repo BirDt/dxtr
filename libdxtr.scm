@@ -1,9 +1,12 @@
-(module libdxtr (roll roll-many roll-one-or-many dice-op oracle dxtr-parse)
+(module libdxtr (roll roll-many roll-one-or-many dice-op oracle portent dxtr-parse)
   (import scheme
 	  (chicken base)
 	  (chicken eval)
+	  (chicken io)
+	  (chicken platform)
 	  (chicken random)
 	  comparse
+	  srfi-1
 	  srfi-14)
 
   (define (roll sides)
@@ -40,6 +43,34 @@
 	((= r 4) "Yes, but...")
 	((= r 5) "Yes")
 	((= r 6) "Yes, and...")))))
+
+  (define words-location
+    "/usr/share/dict/words")
+
+  (define words #f)
+
+  (define (filter-word x)
+    (and (> (string-length x) 1)
+	 (not (member #\' (string->list x)))))
+
+  (define (set-words)
+    (set! words (filter filter-word
+			(call-with-input-file words-location
+			  (lambda (port) (read-lines port)))))
+    words)
+  
+  (define (get-words)
+    (or words
+	(set-words)))
+
+  (define (get-word-linux)
+   (list-ref (get-words)
+	     (pseudo-random-integer (length words))))
+  
+  (define (portent)
+    (list (cond-expand
+	    (linux (get-word-linux))
+	    (else "Not supported by this platform"))))
 
   (define (normalize-literal x)
     (if (list? x)
@@ -105,6 +136,7 @@
   (define keyword
     (sequence* ((x (any-of
 		    (char-seq "oracle")
+		    (char-seq "portent")
 		    (char-seq "help")
 		    (char-seq "exit"))))
 	       (result (list (string->symbol x)))))

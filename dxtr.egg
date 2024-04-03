@@ -5,4 +5,4 @@
  (components (extension libdxtr)
  	     (program dxtr
 	     	      (component-dependencies libdxtr)))
- (dependencies (comparse "3") srfi-14))
+ (dependencies (comparse "3") srfi-14 srfi-1))
