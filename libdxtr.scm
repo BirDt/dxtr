@@ -1,4 +1,4 @@
-(module libdxtr (roll roll-many roll-one-or-many dice-op oracle portent dxtr-parse)
+(module libdxtr (roll roll-many roll-one-or-many dice-op ip ip+ ip- intervene oracle npc twene portent dxtr-parse)
   (import scheme
 	  (chicken base)
 	  (chicken eval)
@@ -34,15 +34,67 @@
 	(roll-many (or sides 6) num)
 	(roll-one (or sides 6))))
 
-  (define (oracle)
+  ;; MUNE oracle stuff
+
+  (define intervention-points (make-parameter 0))
+
+  (define (ip)
+    (list (intervention-points)))
+
+  (define (ip+)
+    (intervention-points (+ 1 (intervention-points)))
+    (ip))
+
+  (define (ip-)
+    (intervention-points (- (intervention-points) 1))
+    (ip))
+
+  (define (intervene)
+    (intervention-points 0)
     (let ((r (roll 6)))
       (list (cond
-	((= r 1) "No, and...")
-	((= r 2) "No")
-	((= r 3) "No, but...")
-	((= r 4) "Yes, but...")
-	((= r 5) "Yes")
-	((= r 6) "Yes, and...")))))
+	     ((= r 1) "New entity")
+	     ((= r 2) "Entity positive")
+	     ((= r 3) "Entity negative")
+	     ((= r 4) "Advance plot")
+	     ((= r 5) "Regress plot")
+	     ((= r 6) "Wild")))))
+  
+  (define (oracle)
+    (let ((r (roll 6)))
+      (list (string-append
+	     (cond
+	      ((= r 1) "No, and...")
+	      ((= r 2) "No")
+	      ((= r 3) "No, but...")
+	      ((= r 4) "Yes, but...")
+	      ((= r 5) "Yes")
+	      ((= r 6) (ip+)
+	       "Yes, and..."))
+	     (if (> (intervention-points) 2)
+		 " - INTERVENTION"
+		 "")))))
+
+  (define (npc)
+    (let ((r (roll 3)))
+      (list (cond
+	     ((= r 1) "Hostile")
+	     ((= r 2) "Neutral")
+	     ((= r 3) "Friendly")))))
+
+  (define (twene)
+    (let ((r (roll 10)))
+      (list (cond
+	     ((= r 1) "Increase simple element")
+	     ((= r 2) "Decrease simple element")
+	     ((= r 3) "Add simple element")
+	     ((= r 4) "Remove simple element")
+	     ((= r 5) "Increase major element")
+	     ((= r 6) "Decrease major element")
+	     ((= r 7) "Add major element")
+	     ((= r 8) "Remove major element")
+	     ((= r 9) "Wild positive")
+	     ((= r 10) "Wild negative")))))
 
   (define words-location
     "/usr/share/dict/words")
@@ -81,8 +133,8 @@
   (define (dice-op op r1 r2)
     (let ((res1 (normalize-literal r1))
 	  (res2 (normalize-literal r2)))
-      (list (eval (list op (car res1) (car res2))
-		  (module-environment 'libdxtr))
+      (list (exact->inexact (eval (list op (car res1) (car res2))
+				  (module-environment 'libdxtr)))
 	    (append (cadr res1) (cadr res2))
 	    (append (caddr res1) (caddr res2)))))
 
@@ -137,6 +189,12 @@
     (sequence* ((x (any-of
 		    (char-seq "oracle")
 		    (char-seq "portent")
+		    (char-seq "ip-")
+		    (char-seq "ip+")
+		    (char-seq "ip")
+		    (char-seq "intervene")
+		    (char-seq "npc")
+		    (char-seq "twene")
 		    (char-seq "help")
 		    (char-seq "exit"))))
 	       (result (list (string->symbol x)))))
